@@ -12,13 +12,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 
 
-hello = "testtesdsasdafdft"
+
 
 def split_data():
     """ Read and split the raw data to X_train, X_test, y_train, y_test. Only keeping posts of nationalities
      with more than 2000 posts."""
 
-    data = pd.read_csv("C:/Users/20213574/PycharmProjects/LanguageandAI/assesment/data/nationality.csv")
+    data = pd.read_csv("data/nationality.csv")
 
     # Get only the posts of a nationality with more than 2000 posts
     data = data.groupby('nationality').filter(lambda x: len(x) > 2000)
@@ -69,24 +69,28 @@ def metrics(y_test, y_pred):
 
     return accuracy, macro_precision, macro_recall, macro_f
 
-# Get data
-X_train, X_test, y_train, y_test = split_data()
+
 # Initiate results table
 results = pd.DataFrame(columns=['Model','Accuracy','Precision','Recall','F-score','Test-size'])
+def test_model(results, X_train, X_test, y_train, y_test, model):
+    """ Test the model and add statistics to the results table"""
+    if model == "Majority-baseline":
+        y_test, y_pred = majority_baseline(X_train, X_test, y_train, y_test)
+    elif model == "tf*idf":
+        y_test, y_pred = tf_idf(X_train, X_test, y_train, y_test)
 
-# Train models and prediction
-# Majority baseline
-y_test_majority, y_pred_majority = majority_baseline(X_train, X_test, y_train, y_test)
-accuracy_majority, macro_precision_majority, macro_recall_majority, macro_f_majority = metrics(y_test_majority, y_pred_majority)
-majority_resuts = {'Model': "Majority-baseline", 'Accuracy': accuracy_majority, 'Precision': macro_precision_majority, 'Recall' : macro_recall_majority,
-                   'F-score': macro_f_majority, 'Test-size': len(y_test_majority)}
-results = results.append(majority_resuts, ignore_index=True)
+    accuracy, macro_precision, macro_recall, macro_f = metrics(y_test, y_pred)
+    majority_resuts = {'Model': model, 'Accuracy': accuracy,
+                       'Precision': macro_precision, 'Recall': macro_recall,
+                       'F-score': macro_f, 'Test-size': len(y_test)}
+    results = results.append(majority_resuts, ignore_index=True)
+    return results
 
-# tf*idf model
-y_test_tf_idf, y_pred_tf_idf = tf_idf(X_train, X_test, y_train, y_test)
-accuracy_tf_idf, macro_precision_tf_idf, macro_recall_tf_idf, macro_f_tf_idf = metrics(y_test_tf_idf, y_pred_tf_idf)
-tf_idf_resuts = {'Model': "TF*IDF-baseline", 'Accuracy': accuracy_tf_idf, 'Precision': macro_precision_tf_idf, 'Recall' : macro_recall_tf_idf,
-                   'F-score': macro_f_tf_idf, 'Test-size': len(y_test_tf_idf)}
-results = results.append(tf_idf_resuts, ignore_index=True)
 
+
+# Get data
+X_train, X_test, y_train, y_test = split_data()
+
+results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
+results = test_model(results, X_train, X_test, y_train, y_test, "tf*idf")
 print(results)
