@@ -6,7 +6,6 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from statistics import mode
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score, recall_score
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -17,10 +16,12 @@ import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk import pos_tag
 from nltk.corpus import stopwords
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
+
+# Imports confusion matrix
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Download NLTK resources
 nltk.download('punkt')
@@ -37,7 +38,7 @@ def split_data():
 
     # Get only the posts of a nationality with more than 2000 posts
     data = data.groupby('nationality').filter(lambda x: len(x) > 2000)
-    data = data[:2000]# Smaller data for testing with faster running time
+    data = data[:20000]# Smaller data for testing with faster running time
     X = data["post"]
     y = data['nationality']
 
@@ -90,6 +91,9 @@ def extract_stylometric_features(post):
     # Tokenize post
     words = word_tokenize(post)
     sentences = sent_tokenize(post)
+    #print(words)
+    #print(sentences)
+
 
     # Feature 1: Average word length
     average_word_length = np.mean([len(word) for word in words])
@@ -120,9 +124,41 @@ def extract_stylometric_features(post):
     # Feature 9: Average syllables per word
     syllables_per_word = np.mean([sum(char.isdigit() for char in word) for word in words])
 
+    # Feature 10: Total number of words
+    num_words = len(words)
+
+    # Feature 11: Vocabulary richness
+    vocab = list(set(words))
+    vocab_richness = len(vocab)/num_words
+
+    # Feature 12: Vocabulary size
+    vocab_size = len(vocab)
+
+    # Feature 13: Frequency of "."
+    freq_dot = len([word for word in words if word == "."])
+
+    # Feature 14: Frequency of ","
+    freq_comma = len([word for word in words if word == ","])
+
+    # Feature 15: Frequency of ":"
+    freq_colon = len([word for word in words if word == ":"])
+
+    # Feature 16: Frequency of "?"
+    freq_question = len([word for word in words if word == "?"])
+
+    # Feature 17: Frequency of "?"
+    freq_exclamation = len([word for word in words if word == "!"])
+
+    # Feature 18: Standard deviation sentence length
+    std_dev_sentence_length = np.std([len(sentence.split()) for sentence in sentences])
+
+    # Feature 19: Standard deviation sentence length
+    std_dev_word_length = np.std([len(word) for word in words])
+
     return [average_word_length, average_sentence_length, stopwords_percentage,
             num_nouns, num_verbs, num_adjectives, num_adverbs,
-            uppercase_words_percentage, syllables_per_word]
+            uppercase_words_percentage, syllables_per_word, num_words, vocab_richness, vocab_size, freq_dot,
+            freq_comma, freq_colon, freq_question, freq_exclamation, std_dev_sentence_length, std_dev_word_length]
 
 def svm_model2(X_train, X_test, y_train, y_test):
     """ Train and predict the SVM model using stylometric features"""
@@ -157,6 +193,19 @@ def metrics(y_test, y_pred):
 
     return accuracy, macro_precision, macro_recall, macro_f
 
+def multiclass_confusion_matrix(y_test, y_pred, model):
+    labels = list(set(y_test))
+    # Create confusion matrix
+    cm = confusion_matrix(y_test, y_pred, labels=labels)
+
+    # Plot the confusion matrix using seaborn
+    plt.figure(figsize=(len(labels), len(labels)))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title(f'Multiclass Confusion Matrix of {model}')
+    plt.savefig(f"plot_{model}.png")
+
 
 # Initiate results table
 results = pd.DataFrame(columns=['Model','Accuracy','Precision','Recall','F-score','Test-size'])
@@ -176,6 +225,7 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
                        'Precision': macro_precision, 'Recall': macro_recall,
                        'F-score': macro_f, 'Test-size': len(y_test)}
     results = results.append(majority_resuts, ignore_index=True)
+    multiclass_confusion_matrix(y_test, y_pred, model)
     return results
 
 
@@ -184,9 +234,11 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
 X_train, X_test, y_train, y_test = split_data()
 
 results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
-results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
+#results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
 results = test_model(results, X_train, X_test, y_train, y_test, "svm1")
 results = test_model(results, X_train, X_test, y_train, y_test, "svm2")
 print(results)
 
-
+# print(X_train[0])
+# print(extract_stylometric_features(X_train[0]))
+# print(extract_stylometric_features(X_train[1]))
