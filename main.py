@@ -38,7 +38,7 @@ def split_data():
 
     # Get only the posts of a nationality with more than 2000 posts
     data = data.groupby('nationality').filter(lambda x: len(x) > 2000)
-    data = data[:20000]# Smaller data for testing with faster running time
+    #data = data[:2000]# Smaller data for testing with faster running time
     X = data["post"]
     y = data['nationality']
 
@@ -204,7 +204,7 @@ def multiclass_confusion_matrix(y_test, y_pred, model):
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title(f'Multiclass Confusion Matrix of {model}')
-    plt.savefig(f"plot_{model}.png")
+    plt.savefig(f"cm_{model}.png")
 
 
 # Initiate results table
@@ -215,17 +215,24 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
         y_test, y_pred = majority_baseline(X_train, X_test, y_train, y_test)
     elif model == "Naive Bayes":
         y_test, y_pred = naivebayes(X_train, X_test, y_train, y_test)
-    elif model == "svm1":
+    elif model == "SVM_tf_idf":
         y_test, y_pred = svm_model1(X_train, X_test, y_train, y_test)
-    elif model == "svm2":
+    elif model == "SVM_stylometry":
         y_test, y_pred = svm_model2(X_train, X_test, y_train, y_test)
 
+    # Get the performance metrics and add to the resuts table
     accuracy, macro_precision, macro_recall, macro_f = metrics(y_test, y_pred)
     majority_resuts = {'Model': model, 'Accuracy': accuracy,
                        'Precision': macro_precision, 'Recall': macro_recall,
                        'F-score': macro_f, 'Test-size': len(y_test)}
     results = results.append(majority_resuts, ignore_index=True)
+
+    # Creating a confusion matrix of the prediction
     multiclass_confusion_matrix(y_test, y_pred, model)
+
+    # Creatinng and saving a DataFrame prediction values for later use
+    df = pd.DataFrame({'y_test': y_test, 'y_pred': y_pred})
+    df.to_csv(f'predictions_{model}.csv', index=False)
     return results
 
 
@@ -235,8 +242,8 @@ X_train, X_test, y_train, y_test = split_data()
 
 results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
 #results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
-results = test_model(results, X_train, X_test, y_train, y_test, "svm1")
-results = test_model(results, X_train, X_test, y_train, y_test, "svm2")
+results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
+results = test_model(results, X_train, X_test, y_train, y_test, "SVM_stylometry")
 print(results)
 
 # print(X_train[0])
