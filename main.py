@@ -29,23 +29,38 @@ nltk.download('averaged_perceptron_tagger')
 nltk.download('stopwords')
 
 
+
+
+
 def split_data():
-    """ Read and split the raw data to X_train, X_test, y_train, y_test. Only keeping posts of nationalities
-     with more than 2000 posts."""
+    """ Read and split the raw data to X_train, X_test, y_train, y_test.
+    Split is done on the author_id with 80:20 ratio. It is split on author_id's
+    to make sure no authors in both in test and train data.
+    Only keeping posts of nationalities with more than 1000 posts."""
 
     data = pd.read_csv("data/nationality.csv")
-
 
     # Get only the posts of a nationality with more than 2000 posts
     data = data.groupby('nationality').filter(lambda x: len(x) > 2000)
     #data = data[:2000]# Smaller data for testing with faster running time
-    X = data["post"]
-    y = data['nationality']
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=27,
-                                                        stratify=y)
+    # Get a dataframe of only the unique authors, and perform 80:20 stratified split on this dataframe
+    nat_userid = data[["auhtor_ID", "nationality"]].drop_duplicates()
+    X = nat_userid["auhtor_ID"]
+    y = nat_userid["nationality"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=27, stratify=y)
+
+    # Merge the author_id with their posts
+    train = pd.merge(X_train, data, on='auhtor_ID', how='inner')
+    test = pd.merge(X_test, data, on='auhtor_ID', how='inner')
+
+    # Get the X_train, X_test, y_train, y_test
+    X_train = train["post"]
+    y_train = train["nationality"]
+    X_test = test["post"]
+    y_test = test["nationality"]
+
     return X_train, X_test, y_train, y_test
-
 
 
 def majority_baseline(X_train, X_test, y_train, y_test):
@@ -86,7 +101,7 @@ def svm_model1(X_train, X_test, y_train, y_test):
     return y_test, y_pred
 
 def extract_stylometric_features(post):
-    """ Extract the stylometriuc features of the reddit posts given as input, extracts 9 stylometric features"""
+    """ Extract the stylometric features of the reddit posts given as input, extracts 9 stylometric features"""
 
     # Tokenize post
     words = word_tokenize(post)
@@ -240,12 +255,14 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
 # Get data
 X_train, X_test, y_train, y_test = split_data()
 
-results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
-#results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
-results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
-results = test_model(results, X_train, X_test, y_train, y_test, "SVM_stylometry")
-print(results)
+# results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
+# #results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
+# results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
+# results = test_model(results, X_train, X_test, y_train, y_test, "SVM_stylometry")
+# print(results)
 
-# print(X_train[0])
-# print(extract_stylometric_features(X_train[0]))
-# print(extract_stylometric_features(X_train[1]))
+print(len(X_train))
+print(len(X_test))
+
+
+
