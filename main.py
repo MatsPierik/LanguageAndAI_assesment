@@ -1,8 +1,7 @@
 # Imports
 import pandas as pd
 import numpy as np
-from collections import Counter
-from tqdm import tqdm
+
 from sklearn.model_selection import train_test_split
 from statistics import mode
 from sklearn.metrics import accuracy_score
@@ -158,7 +157,7 @@ def extract_stylometric_features(post):
     # Feature 16: Frequency of "?"
     freq_question = len([word for word in words if word == "?"])
 
-    # Feature 17: Frequency of "?"
+    # Feature 17: Frequency of "!"
     freq_exclamation = len([word for word in words if word == "!"])
 
     # Feature 18: Standard deviation sentence length
