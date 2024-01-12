@@ -33,22 +33,22 @@ nltk.download('stopwords')
 
 
 def split_data():
-    """ Read and split the raw data to X_train, X_test, y_train, y_test.
-    Split is done on the author_id with 80:20 ratio. It is split on author_id's
-    to make sure no authors in both in test and train data.
-    Only keeping posts of nationalities with more than 1000 posts."""
+    """ Read and split the preprocessed data to X_train, X_test, y_train, y_test.
+    The split is first done on the author_id with 80:20 ratio with stratification on nationality.
+    It is split on author_id's to make sure no authors are in both in test and train data.
+    Only keeping posts of nationalities with more than 1000 posts to ensure there is enough data."""
 
-    data = pd.read_csv("data/nationality.csv")
+    data = pd.read_csv('data/preprocessed_data.csv').drop(columns=['Unnamed: 0'])
 
-    # Get only the posts of a nationality with more than 2000 posts
-    data = data.groupby('nationality').filter(lambda x: len(x) > 2000)
+    # Get only the posts of a nationality with more than 1000 posts
+    data = data.groupby('nationality').filter(lambda x: len(x) > 1000)
     #data = data[:2000]# Smaller data for testing with faster running time
 
     # Get a dataframe of only the unique authors, and perform 80:20 stratified split on this dataframe
     nat_userid = data[["auhtor_ID", "nationality"]].drop_duplicates()
     X = nat_userid["auhtor_ID"]
     y = nat_userid["nationality"]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=27, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=25, stratify=y)
 
     # Merge the author_id with their posts
     train = pd.merge(X_train, data, on='auhtor_ID', how='inner')
@@ -101,14 +101,11 @@ def svm_model1(X_train, X_test, y_train, y_test):
     return y_test, y_pred
 
 def extract_stylometric_features(post):
-    """ Extract the stylometric features of the reddit posts given as input, extracts 9 stylometric features"""
+    """ Extract the stylometric features of the reddit posts given as input, extracts 19 stylometric features"""
 
     # Tokenize post
     words = word_tokenize(post)
     sentences = sent_tokenize(post)
-    #print(words)
-    #print(sentences)
-
 
     # Feature 1: Average word length
     average_word_length = np.mean([len(word) for word in words])
@@ -209,17 +206,19 @@ def metrics(y_test, y_pred):
     return accuracy, macro_precision, macro_recall, macro_f
 
 def multiclass_confusion_matrix(y_test, y_pred, model):
+    """ Creates a confusion matrix of the predictions."""
+
     labels = list(set(y_test))
     # Create confusion matrix
     cm = confusion_matrix(y_test, y_pred, labels=labels)
 
-    # Plot the confusion matrix using seaborn
+    # Add titles to axis and the figure
     plt.figure(figsize=(len(labels), len(labels)))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title(f'Multiclass Confusion Matrix of {model}')
-    plt.savefig(f"cm_{model}.png")
+    plt.savefig(f"cm_{model}2.png")
 
 
 # Initiate results table
@@ -230,9 +229,9 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
         y_test, y_pred = majority_baseline(X_train, X_test, y_train, y_test)
     elif model == "Naive Bayes":
         y_test, y_pred = naivebayes(X_train, X_test, y_train, y_test)
-    elif model == "SVM_tf_idf":
+    elif model == "SVM_with_tf_idf":
         y_test, y_pred = svm_model1(X_train, X_test, y_train, y_test)
-    elif model == "SVM_stylometry":
+    elif model == "SVM_with_stylometry":
         y_test, y_pred = svm_model2(X_train, X_test, y_train, y_test)
 
     # Get the performance metrics and add to the resuts table
@@ -247,22 +246,25 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
 
     # Creatinng and saving a DataFrame prediction values for later use
     df = pd.DataFrame({'y_test': y_test, 'y_pred': y_pred})
-    df.to_csv(f'predictions_{model}.csv', index=False)
+    df.to_csv(f'predictions_{model}2.csv', index=False)
     return results
 
 
 
 # Get data
 X_train, X_test, y_train, y_test = split_data()
+print("test-train ratio: ")
+print(len(X_test)/(len(X_train)+len(X_test))) # Print actual train-test ratio
+print((len(X_train)+len(X_test)))
 
-# results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
-# #results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
-# results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
-# results = test_model(results, X_train, X_test, y_train, y_test, "SVM_stylometry")
-# print(results)
+results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
+#results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
+results = test_model(results, X_train, X_test, y_train, y_test, "SVM_with_tf_idf")
+print(results)
+results = test_model(results, X_train, X_test, y_train, y_test, "SVM_with_stylometry")
+print(results)
 
-print(len(X_train))
-print(len(X_test))
+
 
 
 
