@@ -9,7 +9,7 @@ this task.
 ## What are the files in this directory?
 * The 'Preprocessing.py' file contains the code for the preprocessing of the data. First,
 all entries of posts are deleted that are (for the majority) non-English (95% confidence).
-This is done using the library fasttext and a pretrained model of their which can be 
+This is done using the library fasttext and a pretrained model of theirs which can be 
 downloaded from here: https://fasttext.cc/docs/en/language-identification.html.
 Then, all the place names (countries, regions, cities etc.), their demonyms (e.g. Romanian
 for Romania or Londoner for London) and the plural of those two categories (e.g. Romanians
