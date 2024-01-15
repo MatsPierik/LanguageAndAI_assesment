@@ -192,7 +192,7 @@ def svm_model2(X_train, X_test, y_train, y_test):
     return y_test, y_pred
 
 def metrics(y_test, y_pred):
-    """ Compute the requiured metrics to evaltuate the model's performance
+    """ Compute the requiured metrics to evaluate the model's performance
     - Accuracy
     - Macro averaged precision
     - Macro averaged recall
@@ -223,7 +223,7 @@ def multiclass_confusion_matrix(y_test, y_pred, model):
 # Initiate results table
 results = pd.DataFrame(columns=['Model','Accuracy','Precision','Recall','F-score','Test-size'])
 def test_model(results, X_train, X_test, y_train, y_test, model):
-    """ Test the model and add statistics to the results table"""
+    """ Test the model and add statistics to the results table."""
     if model == "Majority-baseline":
         y_test, y_pred = majority_baseline(X_train, X_test, y_train, y_test)
     elif model == "Naive Bayes":
