@@ -24,8 +24,7 @@ Additionally, we have two models that use Term Frequency and Inverse Document Fr
 (TF-IDF) as input: Naive Bayes (NB) and Support Vector Machine (SVM). However, we have seen
 during the experiments that SVM performs better than NB, so we will mainly focus on that model.
 Next, we also use an SVM model with stylometry features as input. And finally, we use 
-a Logistic Regression model to combine the outputs of both the SVM with TF-IDF as input and
-with stylometry features as input.
+a SVM model with TF-IDF as input and stylometry features as input.
 
 ## How to run the code?
 * Essentially, you can just run the 'main.py' file to obtain the results from the research
