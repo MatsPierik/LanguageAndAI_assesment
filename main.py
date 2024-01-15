@@ -275,7 +275,7 @@ print(results)
 results = test_model(results, X_train, X_test, y_train, y_test, "Combined_model")
 print(results)
 
-# To get older results from the saved prediction.csv files
+# Unblock to get older results from the saved prediction.csv files
 # style = pd.read_csv('predictions_SVM_stylometry.csv')
 # print('Stylometry:', metrics(style['y_test'], style['y_pred']))
 # major = pd.read_csv('predictions_Majority-baseline.csv')
