@@ -1,0 +1,5 @@
+Next to the demonyms.csv file, there are 3 other files that are needed for the execution of the code.
+These 3 files, however, are too big in size to upload to GitHub.
+Therefore, we have added those files to Google Drive, from which you can download them using the following link:
+https://drive.google.com/drive/folders/1ha0Aw6bnRkJQQ6Bqr12cG7a1tQn4k5Mt?usp=drive_link
+If you download these files and add them to the data/ directory of the code, you should be able to run all the .py files.
