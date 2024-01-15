@@ -1,8 +1,6 @@
 # Imports
 import pandas as pd
 import numpy as np
-from collections import Counter
-from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from statistics import mode
 from sklearn.metrics import accuracy_score
@@ -11,6 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import svm
 from sklearn.linear_model import LogisticRegression
+from scipy.sparse import hstack
 
 # Stylometry
 import nltk
@@ -31,16 +30,32 @@ nltk.download('stopwords')
 
 
 def split_data():
-    """ Read and split the raw data to X_train, X_test, y_train, y_test. Only keeping posts of nationalities
-     with more than 2000 posts."""
+    """ Read and split the preprocessed data to X_train, X_test, y_train, y_test.
+    The split is first done on the author_id with 80:20 ratio with stratification on nationality.
+    It is split on author_id's to make sure no authors are in both in test and train data.
+    Only keeping posts of nationalities with more than 1000 posts to ensure there is enough data."""
 
     data = pd.read_csv('data/preprocessed_data.csv').drop(columns=['Unnamed: 0'])
+    # Get only the posts of a nationality with more than 1000 posts
+    data = data.groupby('nationality').filter(lambda x: len(x) > 1000)
     #data = data[:2000]# Smaller data for testing with faster running time
-    X = data["post"]
-    y = data['nationality']
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=27,
-                                                        stratify=y)
+    # Get a dataframe of only the unique authors, and perform 80:20 stratified split on this dataframe
+    nat_userid = data[["auhtor_ID", "nationality"]].drop_duplicates()
+    X = nat_userid["auhtor_ID"]
+    y = nat_userid["nationality"]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=25, stratify=y)
+
+    # Merge the author_id with their posts
+    train = pd.merge(X_train, data, on='auhtor_ID', how='inner')
+    test = pd.merge(X_test, data, on='auhtor_ID', how='inner')
+
+    # Get the X_train, X_test, y_train, y_test
+    X_train = train["post"]
+    y_train = train["nationality"]
+    X_test = test["post"]
+    y_test = test["nationality"]
+
     return X_train, X_test, y_train, y_test
 
 
@@ -83,7 +98,7 @@ def svm_model1(X_train, X_test, y_train, y_test):
     return y_test, y_pred
 
 def extract_stylometric_features(post):
-    """ Extract the stylometriuc features of the reddit posts given as input, extracts 9 stylometric features"""
+    """ Extract the stylometric features of the reddit posts given as input, extracts 19 stylometric features"""
 
     # Tokenize post
     words = word_tokenize(post)
@@ -140,7 +155,7 @@ def extract_stylometric_features(post):
     # Feature 16: Frequency of "?"
     freq_question = len([word for word in words if word == "?"])
 
-    # Feature 17: Frequency of "?"
+    # Feature 17: Frequency of "!"
     freq_exclamation = len([word for word in words if word == "!"])
 
     # Feature 18: Standard deviation sentence length
@@ -195,6 +210,37 @@ def combination_model(X_train, X_test, y_train, y_test):
 
     return y_test, y_pred_combined
 
+
+def svm_combined_model(X_train, X_test, y_train, y_test):
+    """ Combine TF-IDF and stylometric features and train SVM model"""
+
+    # TF-IDF features
+    vectorizer = TfidfVectorizer()
+    X_train_tfidf = vectorizer.fit_transform(X_train)
+    X_test_tfidf = vectorizer.transform(X_test)
+
+    # Stylometric features
+    X_train_stylometric = np.array([extract_stylometric_features(post) for post in X_train])
+    X_test_stylometric = np.array([extract_stylometric_features(post) for post in X_test])
+
+    # Standardize stylometric features
+    scaler = StandardScaler()
+    X_train_stylometric = scaler.fit_transform(X_train_stylometric)
+    X_test_stylometric = scaler.transform(X_test_stylometric)
+
+    # Combine TF-IDF and stylometric features
+    X_train_combined = hstack([X_train_tfidf, X_train_stylometric])
+    X_test_combined = hstack([X_test_tfidf, X_test_stylometric])
+
+    # Train SVM model on combined features
+    classifier = svm.SVC(kernel='linear')
+    classifier.fit(X_train_combined, y_train)
+
+    # Make predictions on the test set
+    y_pred = classifier.predict(X_test_combined)
+
+    return y_test, y_pred
+
 def metrics(y_test, y_pred):
     """ Compute the requiured metrics to evaluate the model's performance
     - Accuracy
@@ -235,7 +281,7 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
     elif model == "SVM_stylometry":
         y_test, y_pred = svm_model2(X_train, X_test, y_train, y_test)
     elif model == 'Combined_model':
-        y_test, y_pred = combination_model(X_train, X_test, y_train, y_test)
+        y_test, y_pred = svm_combined_model(X_train, X_test, y_train, y_test)
 
     # Get the performance metrics and add to the resuts table
     accuracy, macro_precision, macro_recall, macro_f = metrics(y_test, y_pred)
@@ -254,21 +300,24 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
 
 
 
-# # Get data
-# X_train, X_test, y_train, y_test = split_data()
-#
-# results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
-# #results = test_model(results, X_train, X_test, y_train, y_test, "Naive Bayes")
-# results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
+# Get data
+X_train, X_test, y_train, y_test = split_data()
+
+# Implement models
+results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
+print(results)
+results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
+print(results)
 # results = test_model(results, X_train, X_test, y_train, y_test, "SVM_stylometry")
-# results = test_model(results, X_train, X_test, y_train, y_test, "Combined_model")
 # print(results)
-style = pd.read_csv('predictions_SVM_stylometry.csv')
-print('Stylometry:', metrics(style['y_test'], style['y_pred']))
-major = pd.read_csv('predictions_Majority-baseline.csv')
-print('Majority baseline:', metrics(major['y_test'], major['y_pred']))
-tfidf = pd.read_csv('predictions_SVM_tf_idf.csv')
-print('TF-IDF:', metrics(tfidf['y_test'], tfidf['y_pred']))
-# print(X_train[0])
-# print(extract_stylometric_features(X_train[0]))
-# print(extract_stylometric_features(X_train[1]))
+results = test_model(results, X_train, X_test, y_train, y_test, "Combined_model")
+print(results)
+
+# To get older results
+# style = pd.read_csv('predictions_SVM_stylometry.csv')
+# print('Stylometry:', metrics(style['y_test'], style['y_pred']))
+# major = pd.read_csv('predictions_Majority-baseline.csv')
+# print('Majority baseline:', metrics(major['y_test'], major['y_pred']))
+# tfidf = pd.read_csv('predictions_SVM_tf_idf.csv')
+# print('TF-IDF:', metrics(tfidf['y_test'], tfidf['y_pred']))
+
