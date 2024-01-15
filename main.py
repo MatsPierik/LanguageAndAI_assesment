@@ -33,10 +33,11 @@ def split_data():
     It is split on author_id's to make sure no authors are in both in test and train data.
     Only keeping posts of nationalities with more than 1000 posts to ensure there is enough data."""
 
+    # Load data from csv
     data = pd.read_csv('data/preprocessed_data.csv').drop(columns=['Unnamed: 0'])
+
     # Get only the posts of a nationality with more than 1000 posts
     data = data.groupby('nationality').filter(lambda x: len(x) > 1000)
-    #data = data[:2000]# Smaller data for testing with faster running time
 
     # Get a dataframe of only the unique authors, and perform 80:20 stratified split on this dataframe
     nat_userid = data[["auhtor_ID", "nationality"]].drop_duplicates()
@@ -70,12 +71,12 @@ def svm_model1(X_train, X_test, y_train, y_test):
     X_train_tfidf = vectorizer.fit_transform(X_train)
     X_test_tfidf = vectorizer.transform(X_test)
 
-    classifier = svm.SVC(kernel='linear')  # Linear Kernel
+    classifier = svm.SVC(kernel='linear')
 
     # Train the SVM model using the TF-IDF features
     classifier.fit(X_train_tfidf, y_train)
 
-    # Make predictions on the test se
+    # Make predictions on the test set
     y_pred = classifier.predict(X_test_tfidf)
     return y_test, y_pred
 
@@ -153,7 +154,7 @@ def extract_stylometric_features(post):
 
 def svm_model2(X_train, X_test, y_train, y_test):
     """ Train and predict the SVM model using stylometric features"""
-    # Extract features and labels
+    # Extract stylometric features and labels from the extract_stylometric_features function
     X_train_stylometric = [extract_stylometric_features(post) for post in X_train]
     X_test_stylometric = [extract_stylometric_features(post) for post in X_test]
 
@@ -162,7 +163,7 @@ def svm_model2(X_train, X_test, y_train, y_test):
     X_train_stylometric = scaler.fit_transform(X_train_stylometric)
     X_test_stylometric = scaler.transform(X_test_stylometric)
 
-    classifier = svm.SVC(kernel='linear')  # Linear Kernel
+    classifier = svm.SVC(kernel='linear')
 
     # Train the SVM model using the TF-IDF features
     classifier.fit(X_train_stylometric, y_train)
@@ -173,7 +174,7 @@ def svm_model2(X_train, X_test, y_train, y_test):
 
 
 def svm_combined_model(X_train, X_test, y_train, y_test):
-    """ Combine TF-IDF and stylometric features and train SVM model"""
+    """ Combine TF-IDF and stylometric features as input and train SVM model"""
 
     # TF-IDF features
     vectorizer = TfidfVectorizer()
@@ -265,7 +266,7 @@ def test_model(results, X_train, X_test, y_train, y_test, model):
 # Get data
 X_train, X_test, y_train, y_test = split_data()
 
-# Implement models
+# Implement models and document results in a table
 results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseline")
 print(results)
 results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
