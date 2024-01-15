@@ -6,9 +6,7 @@ from statistics import mode
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
 from sklearn import svm
-from sklearn.linear_model import LogisticRegression
 from scipy.sparse import hstack
 
 # Stylometry
@@ -58,28 +56,12 @@ def split_data():
 
     return X_train, X_test, y_train, y_test
 
-
-
 def majority_baseline(X_train, X_test, y_train, y_test):
     """ Get the majority baseline predicted values"""
     y_pred = y_test.copy()
     y_pred[:] = mode(y_train)
     return y_test, y_pred
 
-def naivebayes(X_train, X_test, y_train, y_test):
-    """ Train and predict the Naive Bayes model with TF-IDF features"""
-    # Convert text to numerical features using TF-IDF
-    vectorizer = TfidfVectorizer()
-    X_train_tfidf = vectorizer.fit_transform(X_train)
-    X_test_tfidf = vectorizer.transform(X_test)
-
-    # Train the classifier Naive Bayes using the TF-IDF features
-    classifier = MultinomialNB()
-    classifier.fit(X_train_tfidf, y_train)
-
-    # Make predictions on the test set
-    y_pred = classifier.predict(X_test_tfidf)
-    return y_test, y_pred
 
 def svm_model1(X_train, X_test, y_train, y_test):
     """ Train and predict the SVM model using TF-IDF features"""
@@ -189,27 +171,6 @@ def svm_model2(X_train, X_test, y_train, y_test):
     y_pred = classifier.predict(X_test_stylometric)
     return y_test, y_pred
 
-def combination_model(X_train, X_test, y_train, y_test):
-
-    # Extract features and labels
-    y_test_tfidf, y_pred_tfidf = svm_model1(X_train, X_test, y_train, y_test)
-
-    # Model 2: Stylometry model
-    y_test_stylometric, y_pred_stylometric = svm_model2(X_train, X_test, y_train, y_test)
-
-    # Combine predictions
-    X_combined = np.column_stack((y_pred_tfidf, y_pred_stylometric))
-
-    # Final Classifier
-    final_classifier = LogisticRegression()
-    final_classifier.fit(X_combined, y_train)
-
-    # Make predictions on the test set
-    X_test_combined = np.column_stack((y_test_tfidf, y_test_stylometric))
-    y_pred_combined = final_classifier.predict(X_test_combined)
-
-    return y_test, y_pred_combined
-
 
 def svm_combined_model(X_train, X_test, y_train, y_test):
     """ Combine TF-IDF and stylometric features and train SVM model"""
@@ -255,6 +216,7 @@ def metrics(y_test, y_pred):
     return accuracy, macro_precision, macro_recall, macro_f
 
 def multiclass_confusion_matrix(y_test, y_pred, model):
+    """ Creates a confusion metrics of the y_test and y_pred and saves it as .png"""
     labels = list(set(y_test))
     # Create confusion matrix
     cm = confusion_matrix(y_test, y_pred, labels=labels)
@@ -308,12 +270,12 @@ results = test_model(results, X_train, X_test, y_train, y_test, "Majority-baseli
 print(results)
 results = test_model(results, X_train, X_test, y_train, y_test, "SVM_tf_idf")
 print(results)
-# results = test_model(results, X_train, X_test, y_train, y_test, "SVM_stylometry")
-# print(results)
+results = test_model(results, X_train, X_test, y_train, y_test, "SVM_stylometry")
+print(results)
 results = test_model(results, X_train, X_test, y_train, y_test, "Combined_model")
 print(results)
 
-# To get older results
+# To get older results from the saved prediction.csv files
 # style = pd.read_csv('predictions_SVM_stylometry.csv')
 # print('Stylometry:', metrics(style['y_test'], style['y_pred']))
 # major = pd.read_csv('predictions_Majority-baseline.csv')
