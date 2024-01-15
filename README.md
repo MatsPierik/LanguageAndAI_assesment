@@ -7,6 +7,15 @@ on traditional Bag of Words (BoW) or based on stylometry features would perform 
 this task.
 
 ## What are the files in this directory?
+* The first step is to collect all the data files. The file 'demonyms.csv' is available in
+the data folder. However, the files 'nationality.csv', 'preprocessed_data.csv' and
+'lid.176.bin' are all to big in size to add to this GitHub repository. Therefore, you have
+to download those from a Google Drive (which link can be found in the data folder in the file
+'other_data_links') and move those files to the data folder.
+* Essentially, you can just run the 'main.py' file to obtain the results from the research
+paper. Do note that this can take a long time to run (~2-3 hours). The file 
+'preprocessed_data.csv', that is used as input data, is constructed in the 
+'Preprocessing.py' file.
 * The 'Preprocessing.py' file contains the code for the preprocessing of the data. First,
 all entries of posts are deleted that are (for the majority) non-English (95% confidence).
 This is done using the library fasttext and a pretrained model of theirs which can be 
